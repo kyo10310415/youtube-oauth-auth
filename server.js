@@ -212,7 +212,7 @@ app.get('/auth/url', (c) => {
   }
 
   // state: 学籍番号とタイムスタンプ
-  const state = \`\${studentId}:\${Date.now()}\`
+  const state = `${studentId}:${Date.now()}`
 
   // OAuth URL
   const scopes = [
@@ -391,16 +391,16 @@ app.get('/health', (c) => {
 })
 
 // サーバー起動
-console.log(\`🚀 YouTube OAuth Auth Server starting on port \${PORT}...\`)
+console.log(`🚀 YouTube OAuth Auth Server starting on port ${PORT}...`)
 
 serve({
   fetch: app.fetch,
   port: Number(PORT),
 }, (info) => {
-  console.log(\`✅ Server running at http://localhost:\${info.port}\`)
-  console.log(\`📊 Environment:\`)
-  console.log(\`   - DATABASE_URL: \${DATABASE_URL ? '✓ Set' : '✗ Not set'}\`)
-  console.log(\`   - CLIENT_ID: \${YOUTUBE_ANALYTICS_CLIENT_ID ? '✓ Set' : '✗ Not set'}\`)
-  console.log(\`   - CLIENT_SECRET: \${YOUTUBE_ANALYTICS_CLIENT_SECRET ? '✓ Set' : '✗ Not set'}\`)
-  console.log(\`   - REDIRECT_URI: \${YOUTUBE_ANALYTICS_REDIRECT_URI || 'Not set'}\`)
+  console.log(`✅ Server running at http://localhost:${info.port}`)
+  console.log(`📊 Environment:`)
+  console.log(`   - DATABASE_URL: ${DATABASE_URL ? '✓ Set' : '✗ Not set'}`)
+  console.log(`   - CLIENT_ID: ${YOUTUBE_ANALYTICS_CLIENT_ID ? '✓ Set' : '✗ Not set'}`)
+  console.log(`   - CLIENT_SECRET: ${YOUTUBE_ANALYTICS_CLIENT_SECRET ? '✓ Set' : '✗ Not set'}`)
+  console.log(`   - REDIRECT_URI: ${YOUTUBE_ANALYTICS_REDIRECT_URI || 'Not set'}`)
 })
