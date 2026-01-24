@@ -337,7 +337,7 @@ app.get('/auth/callback', async (c) => {
               <i class="fas fa-check-circle text-green-600 text-6xl"></i>
             </div>
             <h1 class="text-3xl font-bold text-gray-900 mb-4">認証完了！</h1>
-            <p class="text-lg text-gray-600 mb-2">学籍番号: <span class="font-mono font-bold text-purple-600">\${studentId}</span></p>
+            <p class="text-lg text-gray-600 mb-2">学籍番号: <span class="font-mono font-bold text-purple-600">${studentId}</span></p>
             <p class="text-gray-500 mb-8">
               YouTube Analyticsデータへのアクセスが許可されました。<br>
               トークンはデータベースに安全に保存されました。
