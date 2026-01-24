@@ -165,7 +165,7 @@ app.get('/', (c) => {
 
           try {
             // 認証URL取得
-            const response = await fetch(\`/auth/url?studentId=\${encodeURIComponent(studentId)}\`);
+            const response = await fetch(`/auth/url?studentId=\${encodeURIComponent(studentId)}`);
             const data = await response.json();
 
             if (!data.success) {
@@ -243,7 +243,7 @@ app.get('/auth/callback', async (c) => {
 
   // エラー処理
   if (error) {
-    return c.html(\`
+    return c.html(`
       <!DOCTYPE html>
       <html lang="ja">
       <head>
@@ -265,7 +265,7 @@ app.get('/auth/callback', async (c) => {
         </div>
       </body>
       </html>
-    \`)
+    `)
   }
 
   if (!code || !state) {
@@ -300,7 +300,7 @@ app.get('/auth/callback', async (c) => {
     if (pool) {
       const expiresAt = Date.now() + (tokenData.expires_in * 1000)
       
-      await pool.query(\`
+      await pool.query(`
         INSERT INTO youtube_oauth_tokens (student_id, access_token, refresh_token, expires_at, token_type, updated_at)
         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
         ON CONFLICT (student_id)
@@ -310,7 +310,7 @@ app.get('/auth/callback', async (c) => {
           expires_at = EXCLUDED.expires_at,
           token_type = EXCLUDED.token_type,
           updated_at = CURRENT_TIMESTAMP
-      \`, [
+      `, [
         studentId,
         tokenData.access_token,
         tokenData.refresh_token || null,
@@ -320,7 +320,7 @@ app.get('/auth/callback', async (c) => {
     }
 
     // 成功ページ
-    return c.html(\`
+    return c.html(`
       <!DOCTYPE html>
       <html lang="ja">
       <head>
@@ -360,10 +360,10 @@ app.get('/auth/callback', async (c) => {
         </div>
       </body>
       </html>
-    \`)
+    `)
   } catch (error) {
     console.error('[OAuth Callback] Error:', error)
-    return c.html(\`
+    return c.html(`
       <!DOCTYPE html>
       <html lang="ja">
       <head>
@@ -381,7 +381,7 @@ app.get('/auth/callback', async (c) => {
         </div>
       </body>
       </html>
-    \`)
+    `)
   }
 })
 
