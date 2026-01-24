@@ -19,7 +19,7 @@ const YOUTUBE_ANALYTICS_CLIENT_SECRET = process.env.YOUTUBE_ANALYTICS_CLIENT_SEC
 const YOUTUBE_ANALYTICS_REDIRECT_URI = process.env.YOUTUBE_ANALYTICS_REDIRECT_URI
 
 // PostgreSQL接続プール
-let pool: pg.Pool | null = null
+let pool = null
 
 function getDbPool() {
   if (!pool && DATABASE_URL) {
@@ -361,7 +361,7 @@ app.get('/auth/callback', async (c) => {
       </body>
       </html>
     \`)
-  } catch (error: any) {
+  } catch (error) {
     console.error('[OAuth Callback] Error:', error)
     return c.html(\`
       <!DOCTYPE html>
