@@ -4,8 +4,8 @@
   "type": "module",
   "description": "YouTube Analytics OAuth認証専用Webアプリ",
   "scripts": {
-    "dev": "tsx server.js",
-    "start": "tsx server.js",
+    "dev": "node server.js",
+    "start": "node server.js",
     "build": "echo 'No build step required'"
   },
   "dependencies": {
