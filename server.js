@@ -165,7 +165,7 @@ app.get('/', (c) => {
 
           try {
             // 認証URL取得
-            const response = await fetch(`/auth/url?studentId=${encodeURIComponent(studentId)}`);
+            const response = await fetch('/auth/url?studentId=' + encodeURIComponent(studentId));
             const data = await response.json();
 
             if (!data.success) {
@@ -282,9 +282,9 @@ app.get('/auth/callback', async (c) => {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         code,
-        client_id: YOUTUBE_ANALYTICS_CLIENT_ID!,
-        client_secret: YOUTUBE_ANALYTICS_CLIENT_SECRET!,
-        redirect_uri: YOUTUBE_ANALYTICS_REDIRECT_URI!,
+        client_id: YOUTUBE_ANALYTICS_CLIENT_ID,
+        client_secret: YOUTUBE_ANALYTICS_CLIENT_SECRET,
+        redirect_uri: YOUTUBE_ANALYTICS_REDIRECT_URI,
         grant_type: 'authorization_code',
       }),
     })
