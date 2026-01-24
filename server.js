@@ -165,7 +165,7 @@ app.get('/', (c) => {
 
           try {
             // 認証URL取得
-            const response = await fetch(`/auth/url?studentId=\${encodeURIComponent(studentId)}`);
+            const response = await fetch(`/auth/url?studentId=${encodeURIComponent(studentId)}`);
             const data = await response.json();
 
             if (!data.success) {
