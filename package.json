@@ -5,6 +5,7 @@
   "description": "YouTube Analytics OAuth認証専用Webアプリ",
   "scripts": {
     "dev": "node server.js",
+    "test": "node --test test/*.test.js",
     "start": "node server.js",
     "build": "echo 'No build step required'"
   },

@@ -5,7 +5,7 @@
 
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
-import { cors } from 'hono/cors'
+import { registerOAuthFlow } from './oauth-flow.js'
 import pg from 'pg'
 const { Pool } = pg
 
@@ -32,7 +32,7 @@ function getDbPool() {
 }
 
 // CORS設定
-app.use('*', cors())
+
 
 // トップページ（認証UI）
 app.get('/', (c) => {
@@ -79,7 +79,7 @@ app.get('/', (c) => {
               </li>
               <li class="flex items-start">
                 <span class="mr-2">•</span>
-                <span>認証情報が自動的にBase64エンコードされます</span>
+                <span>認証情報をサーバーへ保存します</span>
               </li>
             </ul>
           </div>
@@ -97,7 +97,7 @@ app.get('/', (c) => {
               </li>
               <li class="flex items-start">
                 <span class="mr-2">•</span>
-                <span>「認証されていません」と表示された場合は「詳細」→「(unsafe)に移動」をクリック</span>
+                <span>不明な認証警告が表示された場合は管理者へお問い合わせください</span>
               </li>
               <li class="flex items-start">
                 <span class="mr-2">•</span>
@@ -106,21 +106,21 @@ app.get('/', (c) => {
             </ul>
           </div>
 
-          <!-- 学籍番号入力フォーム -->
+          <!-- 招待コード入力フォーム -->
           <div class="mb-6">
             <label for="student-id" class="block text-sm font-medium text-gray-700 mb-2">
-              学籍番号
+              招待コード
             </label>
             <input 
               type="text" 
               id="student-id" 
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-              placeholder="例: OLST240115-WY"
+              placeholder="管理者から受け取った認証コード"
               required
             >
             <p class="mt-2 text-sm text-gray-500">
               <i class="fas fa-info-circle mr-1"></i>
-              あなたの学籍番号を入力してください
+              管理者から受け取った一回限りの認証コードを入力してください
             </p>
           </div>
 
@@ -159,13 +159,13 @@ app.get('/', (c) => {
           const studentId = studentIdInput.value.trim();
           
           if (!studentId) {
-            showError('学籍番号を入力してください');
+            showError('招待コードを入力してください');
             return;
           }
 
           try {
             // 認証URL取得
-            const response = await fetch('/auth/url?studentId=' + encodeURIComponent(studentId));
+            const response = await fetch('/auth/url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ invitation: studentId }) });
             const data = await response.json();
 
             if (!data.success) {
@@ -196,194 +196,7 @@ app.get('/', (c) => {
   `)
 })
 
-// OAuth認証URL生成
-app.get('/auth/url', (c) => {
-  const studentId = c.req.query('studentId')
-  
-  if (!studentId) {
-    return c.json({ success: false, error: '学籍番号が必要です' }, 400)
-  }
-
-  if (!YOUTUBE_ANALYTICS_CLIENT_ID || !YOUTUBE_ANALYTICS_REDIRECT_URI) {
-    return c.json({ 
-      success: false, 
-      error: 'OAuth設定が不足しています' 
-    }, 500)
-  }
-
-  // state: 学籍番号とタイムスタンプ
-  const state = `${studentId}:${Date.now()}`
-
-  // OAuth URL
-  const scopes = [
-    'https://www.googleapis.com/auth/youtube.readonly',
-    'https://www.googleapis.com/auth/yt-analytics.readonly',
-  ]
-
-  const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
-  authUrl.searchParams.set('client_id', YOUTUBE_ANALYTICS_CLIENT_ID)
-  authUrl.searchParams.set('redirect_uri', YOUTUBE_ANALYTICS_REDIRECT_URI)
-  authUrl.searchParams.set('response_type', 'code')
-  authUrl.searchParams.set('scope', scopes.join(' '))
-  authUrl.searchParams.set('access_type', 'offline')
-  authUrl.searchParams.set('prompt', 'consent')
-  authUrl.searchParams.set('state', state)
-
-  return c.json({
-    success: true,
-    authUrl: authUrl.toString(),
-  })
-})
-
-// OAuth コールバック
-app.get('/auth/callback', async (c) => {
-  const code = c.req.query('code')
-  const state = c.req.query('state')
-  const error = c.req.query('error')
-
-  // エラー処理
-  if (error) {
-    return c.html(`
-      <!DOCTYPE html>
-      <html lang="ja">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>認証エラー</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-      </head>
-      <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white rounded-lg shadow-lg p-8 max-w-md">
-          <div class="text-center mb-4">
-            <i class="fas fa-times-circle text-red-500 text-6xl"></i>
-          </div>
-          <h1 class="text-2xl font-bold text-gray-900 mb-4 text-center">認証エラー</h1>
-          <p class="text-gray-600 text-center mb-6">認証がキャンセルされました</p>
-          <a href="/" class="block w-full bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition text-center">
-            トップページに戻る
-          </a>
-        </div>
-      </body>
-      </html>
-    `)
-  }
-
-  if (!code || !state) {
-    return c.json({ success: false, error: '無効なコールバック' }, 400)
-  }
-
-  try {
-    // stateから学籍番号を抽出
-    const [studentId] = state.split(':')
-
-    // トークン交換
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        code,
-        client_id: YOUTUBE_ANALYTICS_CLIENT_ID,
-        client_secret: YOUTUBE_ANALYTICS_CLIENT_SECRET,
-        redirect_uri: YOUTUBE_ANALYTICS_REDIRECT_URI,
-        grant_type: 'authorization_code',
-      }),
-    })
-
-    const tokenData = await tokenResponse.json()
-
-    if (!tokenData.access_token) {
-      throw new Error('トークン取得に失敗しました')
-    }
-
-    // PostgreSQLに保存
-    const pool = getDbPool()
-    if (pool) {
-      const expiresAt = Date.now() + (tokenData.expires_in * 1000)
-      
-      await pool.query(`
-        INSERT INTO youtube_oauth_tokens (student_id, access_token, refresh_token, expires_at, token_type, updated_at)
-        VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
-        ON CONFLICT (student_id)
-        DO UPDATE SET
-          access_token = EXCLUDED.access_token,
-          refresh_token = EXCLUDED.refresh_token,
-          expires_at = EXCLUDED.expires_at,
-          token_type = EXCLUDED.token_type,
-          updated_at = CURRENT_TIMESTAMP
-      `, [
-        studentId,
-        tokenData.access_token,
-        tokenData.refresh_token || null,
-        expiresAt,
-        tokenData.token_type || 'Bearer',
-      ])
-    }
-
-    // 成功ページ
-    return c.html(`
-      <!DOCTYPE html>
-      <html lang="ja">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>認証完了</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-      </head>
-      <body class="bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 min-h-screen flex items-center justify-center p-4">
-        <div class="max-w-md w-full">
-          <div class="bg-white rounded-2xl shadow-2xl p-8 text-center">
-            <div class="inline-block p-4 bg-green-100 rounded-full mb-6">
-              <i class="fas fa-check-circle text-green-600 text-6xl"></i>
-            </div>
-            <h1 class="text-3xl font-bold text-gray-900 mb-4">認証完了！</h1>
-            <p class="text-lg text-gray-600 mb-2">学籍番号: <span class="font-mono font-bold text-purple-600">${studentId}</span></p>
-            <p class="text-gray-500 mb-8">
-              YouTube Analyticsデータへのアクセスが許可されました。<br>
-              トークンはデータベースに安全に保存されました。
-            </p>
-            
-            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 text-left mb-6">
-              <h2 class="font-semibold text-blue-900 mb-2">
-                <i class="fas fa-info-circle mr-2"></i>
-                次のステップ
-              </h2>
-              <p class="text-sm text-blue-800">
-                このページを閉じて、メインアプリの所属生データページでデータを確認してください。
-              </p>
-            </div>
-
-            <a href="/" class="block w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:from-purple-700 hover:to-blue-700 transition shadow-lg">
-              トップページに戻る
-            </a>
-          </div>
-        </div>
-      </body>
-      </html>
-    `)
-  } catch (error) {
-    console.error('[OAuth Callback] Error:', error)
-    return c.html(`
-      <!DOCTYPE html>
-      <html lang="ja">
-      <head>
-        <meta charset="UTF-8">
-        <title>エラー</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-      </head>
-      <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white rounded-lg shadow-lg p-8 max-w-md">
-          <h1 class="text-2xl font-bold text-red-600 mb-4">エラーが発生しました</h1>
-          <p class="text-gray-600 mb-6">\${error.message}</p>
-          <a href="/" class="block w-full bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition text-center">
-            トップページに戻る
-          </a>
-        </div>
-      </body>
-      </html>
-    `)
-  }
-})
+registerOAuthFlow(app, { getDbPool })
 
 // ヘルスチェック
 app.get('/health', (c) => {
