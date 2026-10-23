@@ -1,86 +1,47 @@
 # YouTube Analytics OAuth認証アプリ
 
-生徒が自分でアクセスしてYouTube Analytics APIのOAuth認証を行い、トークンを自動的にデータベースに保存するWebアプリです。
+生徒が管理者から受け取った一回限りの認証コードを使い、自分のYouTubeアカウントを登録するWebアプリです。学籍番号だけで認証を開始する旧方式は廃止しました。
 
-## 機能
+## 配備前の準備
 
-- シンプルなUI（学籍番号入力 → 認証 → 完了）
-- Google OAuth 2.0 認証
-- トークンを自動的にPostgreSQLに保存
-- リフレッシュトークン対応
+既存の `DATABASE_URL`、`YOUTUBE_ANALYTICS_CLIENT_ID`、`YOUTUBE_ANALYTICS_CLIENT_SECRET`、`YOUTUBE_ANALYTICS_REDIRECT_URI` を維持します。redirect URIはこのサービスのHTTPS origin上の `/auth/callback` にします。
 
-## デプロイ方法
+新しく `YOUTUBE_INVITE_ADMIN_TOKEN` を設定してください。他用途と共有しないランダム英数字64文字を推奨します（最低32文字）。チャット・Git・配布用ファイルへ記載しないでください。
 
-### 1. GitHubリポジトリ作成
+管理者が `migrations/001_oauth_invitations.sql` を対象DBで明示的に実行し、招待用テーブルを作成してから配備します。install/start時にはmigrationを実行しません。既存の `youtube_oauth_tokens` テーブル・保存済み連携は変更しません。
 
-```bash
-cd /home/user/youtube-oauth-auth
-git init
-git add .
-git commit -m "Initial commit: YouTube OAuth Auth App"
-gh repo create youtube-oauth-auth --public --source=. --remote=origin --push
+Buildは `npm ci`、Startは `npm start`。隔離環境での依存導入は `npm ci --ignore-scripts`、回帰確認は `npm test` を使用します。
+
+## 管理者の招待発行
+
+信頼できる管理端末の環境に `YOUTUBE_INVITE_ADMIN_TOKEN` を設定し、次を実行します。独自ドメインの場合は `YOUTUBE_OAUTH_ORIGIN` をHTTPS originへ設定します。
+
+```sh
+node scripts/create-invitation.js <student-id> <new-private-file-outside-repository>
 ```
 
-### 2. Renderで新しいWebサービスを作成
+スクリプトはコードを画面へ出さず、新規ファイルへ保存します。既存ファイルは上書きしません。ファイルは秘密情報として扱い、対象生徒に確認済みの私的な経路でコードとサイトURLを渡し、配布後は管理端末上のファイルを削除します。Windowsでは保存先フォルダーのアクセス権も確認してください。
 
-1. Render Dashboard → **New** → **Web Service**
-2. GitHubリポジトリを選択: `youtube-oauth-auth`
-3. 設定:
-   - **Name**: `youtube-oauth-auth`
-   - **Environment**: `Node`
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-   - **Instance Type**: `Free`
+管理APIは `POST /admin/invitations`、JSON `{ "studentId": "<student-id>" }` とBearer管理キーが必要です。応答の招待コードは認証情報なので、画面共有・アクセスログ・解析ツールへ出力しないでください。招待は24時間有効で、認証開始時に消費します。管理者は配布先本人と学籍番号を照合する必要があります。
 
-### 3. 環境変数を設定
+## 生徒の操作
 
-| Key | Value |
-|-----|-------|
-| `DATABASE_URL` | `<メインアプリと同じPostgreSQL接続URL>` |
-| `YOUTUBE_ANALYTICS_CLIENT_ID` | `<Google Cloud ConsoleのクライアントID>` |
-| `YOUTUBE_ANALYTICS_CLIENT_SECRET` | `<Google Cloud Consoleのクライアントシークレット>` |
-| `YOUTUBE_ANALYTICS_REDIRECT_URI` | `https://youtube-oauth-auth.onrender.com/auth/callback` |
+1. サイトのトップページを開きます。
+2. 管理者から受け取った認証コードを入力します。
+3. Googleの認証画面で自分のチャンネルを選び、アクセスを許可します。
+4. 完了画面が出たら閉じます。
 
-### 4. Google Cloud Consoleの設定更新
+コードを持っている人が登録できるため、他人へ転送しないでください。中断・失敗・10分以上の経過・サービス再起動・デプロイ中の場合は、管理者へ再発行を依頼します。同じブラウザで複数の認証を同時に開始しないでください。
 
-**APIとサービス** → **認証情報** → OAuth 2.0 クライアントID
+## セキュリティと運用上の制限
 
-**承認済みのリダイレクトURI**に追加:
-```
-https://youtube-oauth-auth.onrender.com/auth/callback
-```
+- 招待の保存先学籍番号は信頼された管理APIだけが指定します。公開APIの学籍番号指定は使用しません。
+- DBには招待コードのSHA256ハッシュだけを保存し、開始時の原子的DELETEで一度だけ消費します。期限切れ招待は管理者の保守計画で削除できます。
+- ランダムstateを10分間サーバーに保持し、開始ブラウザのSecure/HttpOnly/SameSite=Lax Cookieと照合します。照合前にはトークン交換・保存を行いません。stateはトークン交換前に単回消費します。
+- stateは単一プロセスメモリに保持します。複数インスタンスは共有ストアへ移行するまで非対応です。再起動時は安全に拒否し、新しい招待で再試行します。
+- Googleのaccess/refresh tokenは既存どおりPostgreSQLに保存します。本アプリによるDB列の暗号化は行っていません。DB・バックアップ・ログのアクセス制御を別途管理してください。
+- Googleアカウント本人性はGoogleの認証、対象生徒への登録権限は管理者の個別招待で担保します。生徒本人のログイン基盤を追加したものではありません。
 
-## 使い方
+## 既存連携への影響
 
-### 生徒向け
-
-1. https://youtube-oauth-auth.onrender.com/ にアクセス
-2. 学籍番号を入力（例: OLST240115-WY）
-3. 「認証を開始」ボタンをクリック
-4. YouTubeアカウントでログイン
-5. アクセス許可を承認
-6. 認証完了！
-
-### 管理者向け
-
-生徒に以下のURLを送付：
-```
-https://youtube-oauth-auth.onrender.com/
-```
-
-## 技術スタック
-
-- **Node.js** + **Hono** (軽量Webフレームワーク)
-- **PostgreSQL** (トークン保存)
-- **Google OAuth 2.0** (YouTube Analytics API認証)
-- **TailwindCSS** (UI)
-
-## セキュリティ
-
-- トークンはPostgreSQLに暗号化して保存
-- OAuth 2.0標準プロトコルを使用
-- リフレッシュトークンで自動更新
-
-## ライセンス
-
-MIT
+評価システム等から `/?studentId=...` で開いていたリンクは、トップページを開くだけになります。学籍番号で認証は開始できません。管理者が対象生徒の招待を事前発行・個別配布する運用へ切り替えてから配備してください。呼出元に招待の自動発行機能を追加する場合は、別途その呼出元の権限と配布先検証が必要です。
