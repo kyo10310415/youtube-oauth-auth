@@ -45,3 +45,9 @@ node scripts/create-invitation.js <student-id> <new-private-file-outside-reposit
 ## 既存連携への影響
 
 評価システム等から `/?studentId=...` で開いていたリンクは、トップページを開くだけになります。学籍番号で認証は開始できません。管理者が対象生徒の招待を事前発行・個別配布する運用へ切り替えてから配備してください。呼出元に招待の自動発行機能を追加する場合は、別途その呼出元の権限と配布先検証が必要です。
+
+### 2026-10-25 第12バッチ依存更新
+
+Hono/Node adapterを既存manifest範囲内でlock更新。認証・API・業務コード・DBスキーマ・環境設定は変更しません。Node22.23.4でinstall scripts無効のclean install、8テスト、差分チェック成功。HTTP adapterの保護付き静的配信・エンコードされたパス・JSON処理は架空fixtureで検証。
+
+稼働用audit: Critical0/High0/Moderate0/Low0。全依存audit: Critical0/High0/Moderate0/Low0。警告件数と実際の攻撃成立は別に評価します。招待リンク・OAuth state・認可とHTTP adapterを検証。実Google OAuth認可・DB保存は未試験。
