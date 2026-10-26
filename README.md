@@ -51,3 +51,11 @@ node scripts/create-invitation.js <student-id> <new-private-file-outside-reposit
 Hono/Node adapterを既存manifest範囲内でlock更新。認証・API・業務コード・DBスキーマ・環境設定は変更しません。Node22.23.4でinstall scripts無効のclean install、8テスト、差分チェック成功。HTTP adapterの保護付き静的配信・エンコードされたパス・JSON処理は架空fixtureで検証。
 
 稼働用audit: Critical0/High0/Moderate0/Low0。全依存audit: Critical0/High0/Moderate0/Low0。警告件数と実際の攻撃成立は別に評価します。招待リンク・OAuth state・認可とHTTP adapterを検証。実Google OAuth認可・DB保存は未試験。
+
+## PostgreSQL TLS方針（2026-10-26）
+
+`database-config.js`でDB接続設定を統一しています。Render上（RENDER=true）の短いdpg形式の内部ホストのみ自己署名証明書を許容してTLS必須とし、それ以外の接続先は証明書とホスト名を検証します。Render内部の自己署名は[公式仕様](https://render.com/docs/postgresql-creating-connecting)に合わせた例外で、内部ネットワークの信頼に依存します。
+
+URLのssl*・uselibpqcompatによる検証方針の上書きを防ぎます。sslrootcert/sslcert/sslkeyのCA・クライアント証明書ファイルは読込み後のssl設定へ保持します。hostクエリとNODE_TLS_REJECT_UNAUTHORIZED=0は拒否し、失敗時に非検証・平文へ戻しません。独自CAや非標準の内部ホストでは信頼設定の確認が必要です。
+
+起動ログにはredirect URIを含む環境設定一覧を表示しません。招待方式・保存済みトークン・SQLは変更しません。実DBの証明書/接続成功とGoogle同意・保存の試験は今回未実施です。
