@@ -24,7 +24,7 @@
 以下の**4つの環境変数**が正しく設定されているか確認してください：
 
 ```
-DATABASE_URL=postgresql://vtuber_school_evaluation_user:kWEZaVgrOyWvrZbCPWrSgP46SrIshaNI@dpg-d5ppgkq4d50c73acrj10-a.oregon-postgres.render.com:5432/vtuber_school_evaluation
+DATABASE_URL=postgresql://<USER>:<PASSWORD>@<HOST>:5432/<DATABASE>
 
 YOUTUBE_ANALYTICS_CLIENT_ID=<Google Cloud Consoleから取得>
 
@@ -98,7 +98,7 @@ Start Command: npm start
 
 | Key | Value |
 |-----|-------|
-| `DATABASE_URL` | `postgresql://vtuber_school_evaluation_user:kWEZaVgrOyWvrZbCPWrSgP46SrIshaNI@dpg-d5ppgkq4d50c73acrj10-a.oregon-postgres.render.com:5432/vtuber_school_evaluation` |
+| `DATABASE_URL` | `postgresql://<USER>:<PASSWORD>@<HOST>:5432/<DATABASE>` |
 | `YOUTUBE_ANALYTICS_CLIENT_ID` | Google Cloud Consoleから取得 |
 | `YOUTUBE_ANALYTICS_CLIENT_SECRET` | Google Cloud Consoleから取得 |
 | `YOUTUBE_ANALYTICS_REDIRECT_URI` | `https://youtube-oauth-auth.onrender.com/auth/callback` |
@@ -133,3 +133,8 @@ Start Command: npm start
 - Renderの環境変数設定状況（スクリーンショット可）
 - Renderのログ（Logsタブの内容）
 - Google Cloud Consoleのリダイレクト URI設定状況
+
+
+## 認証情報の取扱い（2026-10-26）
+
+過去にこの文書へ記載されていたDB認証情報は使用しないでください。Renderの対象DBで新しい認証情報を発行し、接続するサービスのDATABASE_URLへ保存します。文書のプレースホルダーをそのまま設定せず、値をチャット・Git・ログへ貼らないでください。新しい設定で配備・接続確認後に、旧認証情報を失効させる必要があります。文書からの削除だけでは失効しません。

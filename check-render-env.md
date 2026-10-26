@@ -4,7 +4,7 @@
 
 ### 1. DATABASE_URL
 ```
-postgresql://vtuber_school_evaluation_user:kWEZaVgrOyWvrZbCPWrSgP46SrIshaNI@dpg-d5ppgkq4d50c73acrj10-a.oregon-postgres.render.com:5432/vtuber_school_evaluation
+postgresql://<USER>:<PASSWORD>@<HOST>:5432/<DATABASE>
 ```
 
 ### 2. YOUTUBE_ANALYTICS_CLIENT_ID
@@ -107,3 +107,8 @@ https://vtuber-school-evaluation.onrender.com/api/analytics/auth/callback
 ### データベース接続エラー
 - `DATABASE_URL` が正しく設定されているか確認
 - PostgreSQLインスタンスが稼働しているか確認
+
+
+## 認証情報の取扱い（2026-10-26）
+
+過去にこの文書へ記載されていたDB認証情報は使用しないでください。Renderの対象DBで新しい認証情報を発行し、接続するサービスのDATABASE_URLへ保存します。文書のプレースホルダーをそのまま設定せず、値をチャット・Git・ログへ貼らないでください。新しい設定で配備・接続確認後に、旧認証情報を失効させる必要があります。文書からの削除だけでは失効しません。
