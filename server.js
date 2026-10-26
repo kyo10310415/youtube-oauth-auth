@@ -1,3 +1,4 @@
+import { getDatabaseConfig } from './database-config.js'
 /**
  * YouTube OAuth認証専用サーバー
  * 生徒が自分でアクセスしてOAuth認証を行い、トークンをDBに保存
@@ -23,10 +24,7 @@ let pool = null
 
 function getDbPool() {
   if (!pool && DATABASE_URL) {
-    pool = new Pool({
-      connectionString: DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
-    })
+    pool = new Pool(getDatabaseConfig(DATABASE_URL))
   }
   return pool
 }
@@ -211,9 +209,5 @@ serve({
   port: Number(PORT),
 }, (info) => {
   console.log(`✅ Server running at http://localhost:${info.port}`)
-  console.log(`📊 Environment:`)
-  console.log(`   - DATABASE_URL: ${DATABASE_URL ? '✓ Set' : '✗ Not set'}`)
-  console.log(`   - CLIENT_ID: ${YOUTUBE_ANALYTICS_CLIENT_ID ? '✓ Set' : '✗ Not set'}`)
-  console.log(`   - CLIENT_SECRET: ${YOUTUBE_ANALYTICS_CLIENT_SECRET ? '✓ Set' : '✗ Not set'}`)
-  console.log(`   - REDIRECT_URI: ${YOUTUBE_ANALYTICS_REDIRECT_URI || 'Not set'}`)
+
 })
