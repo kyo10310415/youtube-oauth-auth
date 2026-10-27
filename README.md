@@ -4,6 +4,11 @@
 
 ## 配備前の準備
 
+Node.jsは `.node-version` の22.23.4を使用します。Renderの `NODE_VERSION` は
+ファイルより優先されるため、設定している場合は同じ版に揃え、配備ログで
+採用版を確認してください。今後のパッチ更新時も、隔離環境で `npm ci --ignore-scripts`
+と `npm test` を確認してから版指定を更新します。
+
 既存の `DATABASE_URL`、`YOUTUBE_ANALYTICS_CLIENT_ID`、`YOUTUBE_ANALYTICS_CLIENT_SECRET`、`YOUTUBE_ANALYTICS_REDIRECT_URI` を維持します。redirect URIはこのサービスのHTTPS origin上の `/auth/callback` にします。
 
 新しく `YOUTUBE_INVITE_ADMIN_TOKEN` を設定してください。他用途と共有しないランダム英数字64文字を推奨します（最低32文字）。チャット・Git・配布用ファイルへ記載しないでください。
