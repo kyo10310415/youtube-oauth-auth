@@ -4,7 +4,7 @@
 
 ## 配備前の準備
 
-Node.jsは `.node-version` の22.23.4を使用します。Renderの `NODE_VERSION` は
+Node.jsは `.node-version` の22.23.5を使用します。Renderの `NODE_VERSION` は
 ファイルより優先されるため、設定している場合は同じ版に揃え、配備ログで
 採用版を確認してください。今後のパッチ更新時も、隔離環境で `npm ci --ignore-scripts`
 と `npm test` を確認してから版指定を更新します。
